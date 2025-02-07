@@ -110,6 +110,7 @@ def updated_list():
 
 
 def main():
+    st.subheader('Family Shopping List')
     with st.form('new_order', clear_on_submit=True):
         message = st.audio_input('**Enter order**', key='message')
 
