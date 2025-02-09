@@ -1,3 +1,5 @@
+import time
+
 import streamlit as st
 import speech_recognition as sr
 from pydantic_ai import Agent
@@ -54,6 +56,40 @@ def accept_order(product, amount):
     add_order([product, amount])
 
 
+@st.dialog('Your order:')
+def approve(product, amount):
+    st.write('product:', product)
+
+
+def update_session_state(choice):
+    if choice != st.session_state.choice:
+        st.session_state.choice = choice
+
+
+# Dialog to choose manually if no access to ai to run agent
+@st.dialog('Choose your order:')
+def manual_approve(text_en, text_he):
+
+    new_choice = st.radio(label='We need your help:', options=[text_en, text_he], index=None,
+                          key='choice')
+
+    # If user makes choice
+    if new_choice:
+        st.write(st.session_state.choice)
+        add_order([st.session_state.choice, None])
+        del st.session_state.choice
+        st.rerun()
+
+
+def manual_process():
+    text_en = st.session_state.options['text_en']
+    text_he = st.session_state.options['text_he']
+
+    manual_approve(text_en, text_he)
+    # if 'choice' in st.session_state.choice:
+    #     add_order([st.session_state.choice, None])
+
+
 # Make english and hebrew transcript to feed to agent
 def transcript(message):
     # Speech recognition
@@ -75,26 +111,37 @@ def transcript_order(message):
     try:
         text_en, text_he = transcript(message)
 
-        # Run transcript agent
-        item_to_add = transcript_agent.run_sync(user_prompt=f'please return appropriate item: '
-                                                            f'{text_en} or '
-                                                            f'{text_he}')
-        # If agent came to decision
-        if item_to_add.data != '':
-            result = item_to_add.data
-            # Make dict from agent RunResult
-            result_dict = result.model_dump()
-            product = result_dict['product']
-            amount = result_dict['amount']
+        # Try if there is access to groq to run agent
+        try:
+            # Run transcript agent
+            item_to_add = transcript_agent.run_sync(user_prompt=f'please return appropriate item: '
+                                                                f'{text_en} or '
+                                                                f'{text_he}')
+            # If agent came to decision
+            if item_to_add.data != '':
+                result = item_to_add.data
+                # Make dict from agent RunResult
+                result_dict = result.model_dump()
+                product = result_dict['product']
+                amount = result_dict['amount']
 
-            if product != '':
-                return [product, amount]
+                if product != '':
+                    return [product, amount]
+                else:
+                    return "Could not understand your order. Please try again."
+
+            # If agent could not make a decision
             else:
                 return "Could not understand your order. Please try again."
 
-        # If agent could not make a decision
-        else:
-            return "Could not understand your order. Please try again."
+        except:
+            # Run alternative manual process
+            if 'options' not in st.session_state:
+                st.session_state.options = {'text_en': text_en, 'text_he': text_he}
+            else:
+                st.session_state.options = {'text_en': text_en, 'text_he': text_he}
+            return 'manual'
+
 
     except TypeError:
         pass
@@ -110,9 +157,11 @@ def updated_list():
 
 
 def main():
+    if 'choice' not in st.session_state:
+        st.session_state.choice = None
     st.subheader('Family Shopping List')
     with st.form('new_order', clear_on_submit=True):
-        message = st.audio_input('**Enter order**', key='message')
+        message = st.audio_input('**Enter order**')
 
         # Submit button
         submitted = st.form_submit_button('Submit')
@@ -126,9 +175,10 @@ def main():
                         add_order([product, amount])
                     else:
                         st.error(result)
+                elif result == 'manual':
+                    manual_process()
                 else:
                     st.error(result)
-
             else:
                 st.error('You did not enter any order.')
 
