@@ -66,7 +66,7 @@ def update_session_state(choice):
         st.session_state.choice = choice
 
 
-# Dialog to choose manually if no access to ai to run agent
+# Dialog to choose manually if no access to AI to run agent
 @st.dialog('Choose your order:')
 def manual_approve(text_en, text_he):
 
