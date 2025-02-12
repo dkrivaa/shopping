@@ -11,6 +11,13 @@ import asyncio
 from google_sheet import add_order
 from shopping_list import existing_list, update_list
 
+
+st.set_page_config(
+    page_title="My App",
+    page_icon="grocery_9564896.png"  # Ensure this is in the app folder
+)
+
+
 # Load env variables
 load_dotenv()
 groq_api_key = os.getenv('GROQ_API_KEY')
