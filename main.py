@@ -179,6 +179,7 @@ def main():
                     product = result[0]
                     amount = result[1]
                     if product != '':
+                        st.write(f'Adding:  {product}, {amount}')
                         add_order([product, amount])
                     else:
                         st.error(result)
