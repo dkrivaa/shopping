@@ -180,8 +180,10 @@ def main():
                     amount = result[1]
                     if product != '':
                         add_order([product, amount])
-                        st.write([f'Added:  {product}, {amount} if {amount} is not None else'
-                                  f'Added: {product}'][0])
+                        if amount is not None:
+                            st.write(f'Added:  {product}, {amount}.')
+                        else:
+                            st.write(f'Added:  {product}.')
                     else:
                         st.error(result)
                 elif result == 'manual':
